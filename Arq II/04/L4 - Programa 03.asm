@@ -1,55 +1,39 @@
 .data
-linhasMatriz: .asciiz "Linhas: "
-colunasMatriz: .asciiz "Colunas: "
-entradaMatriz: .asciiz "Insira o valor de matriz["
-entradaMatriz2: .asciiz "]["
-entradaMatriz3: .asciiz "]: "
+lMatriz: .asciiz "Linhas: "
+cMatriz: .asciiz "Colunas: "
+Ent1: .asciiz "Insira o valor de matriz["
+Ent2: .asciiz "]["
+Ent3: .asciiz "]: "
 resultadoLinhas: .asciiz "Numero de linhas nulas: "
 resultadoColunas: .asciiz "Numero de colunas nulas: "
 quebraDeLinha: .asciiz "\n"
 
 .text
 	
-main:	la $a0, linhasMatriz	# carrega o endereço da string
-	li $v0, 4		# código de impressão de string
-	syscall			# imprime a string
-	
-	li $v0, 5		# codigo de leitura de inteiro
-	syscall			# leitura do valor (retorna em $v0)
-	
+main:	la $a0, lMatriz	# carrega o endereço da string
+	li $v0, 4	
+	syscall		
+	li $v0, 5		
+	syscall			
 	move $a1, $v0		# número de linhas recebe $v0
-	
-	la $a0, colunasMatriz	# carrega o endereço da string
+	la $a0, cMatriz	# carrega o endereço da string
 	li $v0, 4		# código de impressão de string
 	syscall			# imprime a string
-	
 	li $v0, 5		# codigo de leitura de inteiro
 	syscall			# leitura do valor (retorna em $v0)
-	
 	move $a2, $v0		# número de colunas recebe $v0
-	
 	mul $t0, $a1, $a2	# $t0 = linhas * colunas
-	
 	mul $a0, $t0, 4		# $a0 = tamanho da matriz * 4
 	li $v0, 9		# código de alocação dinamica
 	syscall			# aloca tamanho * 4 bytes (endereço em $v0)
-	
 	li $t0, 0		# $t0 = 0
-	
 	la $a0, ($v0)		# $a0 aponta para $v0 (local onde a matriz esta alocada)
-	
 	jal leitura		# leitura (matriz, numeroLinhas, numeroColunas) retorna matriz em $v0
-	
 	move $a0, $v0		# move o endereço da matriz para argumento $a0
-	
 	jal percorreLinhas	# percorreLinhas(matriz, numeroLinhas, numeroColunas)
-	
 	move $a0, $v0		# move o endereço da matriz para argumento $a0
-	
 	jal percorreColunas	# percorreColunas(matriz, numeroLinhas, numeroColunas)
-	
 	jal imprimeResultado	# imprime numero de linhas e colunas
-	
 	li $v0, 10		# código para finalizar o programa
 	syscall			# finaliza o programa
 
@@ -64,43 +48,32 @@ leitura:subi $sp, $sp, 4	# espaço para 1 item na pilha
 	move $a3, $a0		# aux = endereço base de matriz
 	li $s1, 0		# contadorLinhasNulas = 0
 	
-l:	la $a0, entradaMatriz	# carrega o endereço da string
+l:	la $a0, Ent1		# carrega o endereço da string
 	li $v0, 4		# código de impressão de string
 	syscall			# imprime a string
-	
 	move $a0, $t0		# valor de i para impressao
 	li $v0, 1		# código de impressao de inteiro
 	syscall			# imprime i
-	
-	la $a0, entradaMatriz2	# carrega o endereço da string
+	la $a0, Ent2		# carrega o endereço da string
 	li $v0, 4		# código de impressão de string
 	syscall			# imprime a string
-	
 	move $a0, $t1		# valor de j para impressao
 	li $v0, 1		# código de impressao de inteiro
 	syscall			# imprime j
-	
-	la $a0, entradaMatriz3	# carrega o endereço da string
+	la $a0, Ent3	# carrega o endereço da string
 	li $v0, 4		# código de impressão de string
 	syscall			# imprime a string
-	
 	li $v0, 5		# codigo de leitura de inteiro
 	syscall			# leitura do valor (retorna em $v0)
-	
 	move $t2, $v0		# aux = valor lido
-	
 	jal indice		# calcula o endereço de matriz[i][j]
-	
 	sw $t2, ($v0)		# matriz[i][j] = aux
-	
 	addi $t1, $t1, 1	# j++
 	blt $t1, $a2, l		# if (j < numeroColunas1) goto 1
 	li $t1, 0		# j = 0
-	
 	addi $t0, $t0, 1	# i++
 	blt $t0, $a1, l		# if (i < numeroLinhas) goto 1
 	li $t0, 0		# i = 0
-	
 	lw $ra, ($sp)		# recupera o retorno para a main
 	addi $sp, $sp, 4	# libera o espaço na pilha
 	move $v0, $a3		# endereço da matriz para retorno
@@ -115,7 +88,6 @@ percorreLinhas:
 	li $s1, 0		# contadorLinhasNulas = 0
 	
 pL:	jal indice		# calcula o endereço de matriz[i][j]
-
 	lw $t7, ($v0)		# t7 = valor de matriz[i][j]
 	
 	add $s0, $s0, $t7	# soma = soma + valor em matriz[i][j]
