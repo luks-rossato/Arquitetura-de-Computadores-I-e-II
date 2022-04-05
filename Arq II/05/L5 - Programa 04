@@ -1,0 +1,180 @@
+.data
+entradaN: .asciiz "Insira o numero de posicoes do vetor: "
+entradainvalida: .asciiz "O número digitado não é par! Tente novamente!\n "
+entradaVet: .asciiz "Insira vet["
+entradaAux: .asciiz "]: "
+saida: .asciiz "Soma do maior segmento: "
+primeira: .asciiz "\nOs menores valores são: "
+segunda: .asciiz "\nOs maiores valores são: "
+
+.text
+
+#variáveis
+#	$s0 = tamanho do vetor
+#	$s1 = endereço base do vetor 1
+#	$s2 = endereço base do vetor 2
+#	$s2 = maior
+#	$s3 = soma
+
+main:
+	jal numero
+	move $s0, $v0		#Salva em $s0 o valor lido
+	move $a0, $s0		#Passa o tamanho do vetor para o argumento $a0
+	jal alloc
+	move $s1, $v0 		#Salva o endereço base do vetor retornado da função alloc em $s1
+	move $a0, $s1		#Passa o endereço base do vetor para o argumento $a0
+	move $a1, $s0		#Passa o tamanho do vetor para o argumento $a1
+	jal scanVet
+	move $s1, $v0 		#Salva o endereço base do vetor retornado da função alloc em $s1
+	move $a0, $s1		#Passa o endereço base do vetor para o argumento $a0
+	move $a1, $s0		#Passa o tamanho do vetorpara o argumento $a1
+	jal ordena	
+	move $s1, $v0 		#Salva o endereço base do vetor retornado da função alloc em $s1
+	move $a0, $s1		#Passa o endereço base do vetor para o argumento $a0
+	move $a1, $s0		#Passa o tamanho do vetorpara o argumento $a1
+	jal escrita
+	move $s1, $v0 		#Salva o endereço base do vetor retornado da função alloc em $s1
+	move $a0, $s1		#Passa o endereço base do vetor para o argumento $a0
+	move $a1, $s0		#Passa o tamanho do vetorpara o argumento $a1
+	jal escrita2
+	li $v0, 10		#Código de finalização de programa
+	syscall
+
+
+naovalido:
+	la $a0, entradainvalida
+	li $v0, 4		#Código de impressão de string
+	syscall
+	 
+numero:
+	la $a0, entradaN
+	li $v0, 4		#Código de impressão de string
+	syscall
+	li $v0, 5		#Código de leitura de inteiro
+	syscall
+	div $t0, $v0, 2 #Divide o valor por 2
+	mfhi $t1 #Recebe o resto da divisão
+	bnez $t1, naovalido #Se não for par, tenta novamente
+	jr $ra
+	
+alloc:
+	mul $a0, $a0, 4		#Multiplica o tamanho do vetor por 4 bits
+	li $v0, 9		#Código de alocação dinâmica
+	syscall
+	jr $ra
+
+scanVet:
+	move $t0, $a0		#Salva o endereço base do vetor em $t0
+	move $t1, $t0		#Salva o endereço base do vetor em $t1 ($t1 será incrementado)
+	li $t2, 0		#$t2 recebe 0 (contador de verificação)
+	move $t3, $a1		#Salva o tamanho do vetor em $t3
+	
+l:	la $a0, entradaVet	
+	li $v0, 4		#Código de impressão de string
+	syscall
+	move $a0, $t2
+	li $v0, 1		#Código de impressão de inteiro
+	syscall
+	la $a0, entradaAux
+	li $v0, 4		#Código de impressão de string
+	syscall
+	li $v0, 5		#Código de leitura de inteiro
+	syscall
+	sw $v0, ($t1)		#Salva o valor lido no endereço armazenado em $t1
+	addi $t1, $t1, 4	#Incrementa o endereço do vetor
+	addi $t2, $t2, 1	#Incrementa o contador
+	blt $t2, $t3, l		#Pula para l se o contador for menor que o tamanho do vetor
+	move $v0, $t0		#Salva o endereço base de vet
+	jr $ra
+
+	
+escrita:
+   	subi $sp, $sp, 4 # Espaço para 1 item na pilha
+   	sw $ra, ($sp) # Salva o retorno para a main
+   	move $a3, $a0 # aux = endereço base de vet
+   	move $t4, $a0 #salva valor de vet
+   	li $t1, 0 #setamos o contador em 0
+   	div $t7, $a1, 2
+   	la $a0, primeira
+	li $v0, 4		#Código de impressão de string
+	syscall
+e: 
+  	lw $a0, ($t4) # Valor em vet[i]
+  	li $v0, 1 # Código de impressão de inteiro
+   	syscall # Imprinme vet[i]
+  	la $a0, 32 # Código ASCII para espaço
+   	li $v0, 11 # Código de impressão de caractere
+  	syscall # Imprime o espaço
+  	addi $t4, $t4, 4 #Andamos uma posição
+   	addi $t1, $t1, 1 # i++
+   	blt $t1, $t7, e # if(i < tamvet/2) goto e
+   	li $t0, 0 #i - 0
+   	lw $ra, ($sp) # Recupera o retorno para a main
+   	addi $sp, $sp, 4 # Liberao espaço na pilha
+   	move $v0, $a3 # Endereço base da matriz para retorn0
+   	jr $ra # Retorna para a main
+
+escrita2:
+	
+   	subi $sp, $sp, 4 # Espaço para 1 item na pilha
+   	sw $ra, ($sp) # Salva o retorno para a main
+   	move $a3, $a0 # aux = endereço base de vet
+   	move $t4, $a0 #salva valor de vet
+   	li $t1, 0 #setamos o contador em 0
+   	mul $t6, $a1, 4
+   	add $t4, $t6, $t4
+   	div $t7, $a1, 2
+   	la $a0, segunda
+	li $v0, 4		#Código de impressão de string
+	syscall
+e2: 
+  	lw $a0, ($t4) # Valor em vet[i]
+  	li $v0, 1 # Código de impressão de inteiro
+   	syscall # Imprinme vet[i]
+  	la $a0, 32 # Código ASCII para espaço
+   	li $v0, 11 # Código de impressão de caractere
+  	syscall # Imprime o espaço
+  	subi $t4, $t4, 4 #Andamos uma posição
+   	addi $t1, $t1, 1 # i++
+   	blt $t1, $t7, e2 # if(i < tamvet/2) goto e
+   	li $t0, 0 #i - 0
+   	lw $ra, ($sp) # Recupera o retorno para a main
+   	addi $sp, $sp, 4 # Liberao espaço na pilha
+   	move $v0, $a3 # Endereço base da matriz para retorn0
+   	jr $ra # Retorna para a main
+   	
+ordena:
+	move $t0, $a0 #Salva o endereço base de vet
+	move $t1, $a0 #Salva endereço de vet
+	move $t5, $a1 #Salva tamanho do vet
+	li $t7, 1 #contador = 1
+	li $t6, 1 #contador = 1
+
+loop:
+	lw $t2, ($t0) #Carrega 
+	lw $t3, ($t1)
+	blt $t3, $t2, swap #Se um menor que outro troca
+	j avanca2
+
+swap:
+	sw $t2, ($t1) #Troca valores
+	sw $t3, ($t0)
+	j loop
+	
+avanca1:
+	move $t6, $t7 #Reseta o contador
+	addi $t0, $t0, 4 #Anda uma posição com o valor 1
+	move $t1, $t0 #começa os dois no mesmo ponto novamente
+	addi $t7, $t7, 1
+	bgt $t7, $t5, fim
+	j loop
+avanca2:
+	addi $t1, $t1, 4 #Anda uma posição com o valor 2
+	addi $t6, $t6, 1
+	bgt  $t6, $t5, avanca1
+	j loop
+
+fim:
+	move $v0, $a0
+	jr $ra
+	

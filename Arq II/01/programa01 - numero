@@ -1,0 +1,83 @@
+.data
+ent: .asciiz "Insira o valor de Vet["
+ent2: .asciiz "]: "
+msg1: .asciiz "\nEntre com um valor 'N' que seja inteiro e (N>1):"
+msg2: .asciiz " não é Perfeito!"
+msg3: .asciiz " é Perfeito!"
+msg4: .asciiz "\nO número digitado não é válido, tente novamente (N>1): "
+msg5: .asciiz "\nO número "
+msg6: .asciiz " é Perfeito! "
+.align 2
+vet: .space 20
+num: .space 20
+
+.text	
+
+main:   la $a1, num #Endereço do num como parametro
+	jal numeroN #leitura(num)
+	move $a1, $v0 #Endereço do num retornado
+	la $a0, vet #Endereço do vetor como parametro
+	jal leitura #leitura(vet)
+	move $a0, $v0 #Endereço do vetor retornado
+	jal escrita #escrita(vet)
+	li $v0, 10  #Código para finalizar o programa
+	syscall #Finaliza o programa
+	
+numeroN:
+	move $t5, $a0 #Salva o endereço de num
+	li $v0,4 #Codigo Syscall para escrever string
+	la $a0,msg1 #PArâmetro string a ser escrita
+	syscall
+	li $v0,5 #Codigo Syscall para ler inteiros
+	syscall
+	add $t0,$v0,$zero #Armazena em $t0 o numero de inteiros
+	blt $t0, 1, invalido #Vai para invalido caso valor seja menor que 1
+	move $v0, $t0 #endereço de num para retorno
+	jr $ra #Retorna para a main
+invalido:
+	li $v0,4 #Código Syscall escrever string
+	la $a0,msg4 #Parâmetro a ser escrito
+	syscall
+	j numeroN #Pula para o final, para aguardar um ultimo enter
+	
+leitura:
+	move $t0, $a0 #Salva o endereço base de vet
+	move $t5, $a1 #Salva o endereço de num
+	move $t1, $t0 #Endereço de vet[i]
+	li $t2, 0 #i = 0
+l:
+	la $a0, ent #Carrega o endereço da string
+	li $v0, 4 #Codigo de impressão de string
+	syscall #impressão da string
+	move $a0, $t2 #Carrega o índice do vetor
+	li $v0, 1 #Código de impressão de inteiro
+	syscall #Imprime o indice i
+	la $a0, ent2 #Carrega o endereço da string
+	li $v0, 4 #Código de impressão de string
+	syscall #impressão de string
+	li $v0, 5 #Código de leitura de inteiro
+	syscall #Leitura do valor
+	sw $v0, ($t1) #Salva o valor lido em vet[i]
+	add $t1, $t1, 4 #Endereço de vet[i+1]
+	addi $t2, $t2, 1 #i++
+	lw $a0, ($t5) #Carrega o valor de num
+	blt  $t2, $a0, l #if(i<num)goto l
+	move $v0, $t0 #endereço de vet para retorno
+	jr $ra #Retorna para a main
+escrita:
+	move $t0, $a0 #Salva o endereço base de vet
+	move $t1, $t0 #Endereço de vet[i]
+	li $t2, 0 #i=0
+e:	
+	lw $a0, ($t1) #Carrega o valor de vet[i]
+	li $v0, 1 #Código de impressão de inteiro
+	syscall #Imprime vet[i]
+	li $a0, 32 #Código ASCII para espaço
+	li $v0, 11 #Código de impressão de caractere
+	syscall #Imprime um espaço
+	add $t1, $t1, 4 #endereço de vet[i+1]
+	addi $t2, $t2, 1 #i++
+	blt $t2, $t5, e #if(i<num) goto e
+	move $v0, $t0 #Endereço de vet para retorno
+	jr $ra #Retorna para a main
+	
