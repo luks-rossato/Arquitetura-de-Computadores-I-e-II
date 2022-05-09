@@ -1,180 +1,117 @@
 .data
-entradaN: .asciiz "Insira o numero de posicoes do vetor: "
-entradainvalida: .asciiz "O número digitado não é par! Tente novamente!\n "
-entradaVet: .asciiz "Insira vet["
-entradaAux: .asciiz "]: "
-saida: .asciiz "Soma do maior segmento: "
-primeira: .asciiz "\nOs menores valores são: "
-segunda: .asciiz "\nOs maiores valores são: "
-
+ord: .asciiz "Ordem da matriz: "
+Ent1: .asciiz "Insira o valor de matriz["
+Ent2: .asciiz "]["
+Ent3: .asciiz "]: "
+debug1: .asciiz "\n percorreColuna\n"
 .text
-
-#variáveis
-#	$s0 = tamanho do vetor
-#	$s1 = endereço base do vetor 1
-#	$s2 = endereço base do vetor 2
-#	$s2 = maior
-#	$s3 = soma
-
-main:
-	jal numero
-	move $s0, $v0		#Salva em $s0 o valor lido
-	move $a0, $s0		#Passa o tamanho do vetor para o argumento $a0
-	jal alloc
-	move $s1, $v0 		#Salva o endereço base do vetor retornado da função alloc em $s1
-	move $a0, $s1		#Passa o endereço base do vetor para o argumento $a0
-	move $a1, $s0		#Passa o tamanho do vetor para o argumento $a1
-	jal scanVet
-	move $s1, $v0 		#Salva o endereço base do vetor retornado da função alloc em $s1
-	move $a0, $s1		#Passa o endereço base do vetor para o argumento $a0
-	move $a1, $s0		#Passa o tamanho do vetorpara o argumento $a1
-	jal ordena	
-	move $s1, $v0 		#Salva o endereço base do vetor retornado da função alloc em $s1
-	move $a0, $s1		#Passa o endereço base do vetor para o argumento $a0
-	move $a1, $s0		#Passa o tamanho do vetorpara o argumento $a1
-	jal escrita
-	move $s1, $v0 		#Salva o endereço base do vetor retornado da função alloc em $s1
-	move $a0, $s1		#Passa o endereço base do vetor para o argumento $a0
-	move $a1, $s0		#Passa o tamanho do vetorpara o argumento $a1
-	jal escrita2
-	li $v0, 10		#Código de finalização de programa
-	syscall
-
-
-naovalido:
-	la $a0, entradainvalida
-	li $v0, 4		#Código de impressão de string
-	syscall
-	 
-numero:
-	la $a0, entradaN
-	li $v0, 4		#Código de impressão de string
-	syscall
-	li $v0, 5		#Código de leitura de inteiro
-	syscall
-	div $t0, $v0, 2 #Divide o valor por 2
-	mfhi $t1 #Recebe o resto da divisão
-	bnez $t1, naovalido #Se não for par, tenta novamente
-	jr $ra
 	
-alloc:
-	mul $a0, $a0, 4		#Multiplica o tamanho do vetor por 4 bits
-	li $v0, 9		#Código de alocação dinâmica
-	syscall
-	jr $ra
+main:	la $a0, ord # carrega o endereço da string
+	li $v0, 4		
+	syscall			
+	li $v0, 5		# codigo de leitura de inteiro
+	syscall			# leitura do valor (retorna em $v0)
+	bge $v0, 8, main	#volta caso seja de ordem maior que 8
+	move $a1, $v0		# número de linhas recebe $v0
+	move $a2, $v0		# número de colunas recebe $v0
+	mul $a0, $v0, 4		# $a0 = tamanho da matriz * 4
+	li $v0, 9		# código de alocação dinamica
+	syscall			# aloca tamanho * 4 bytes (endereço em $v0)
+	la $a0, ($v0)		# $a0 aponta para $v0 (local onde a matriz esta alocada)
+	jal leitura		# leitura (matriz, numeroLinhas, numeroColunas) retorna matriz em $v0
+	move $a0, $v0		# move o endereço da matriz para argumento $a0
+	jal percorreLinhas	# percorreLinhas(matriz, numeroLinhas, numeroColunas)
+	move $a0, $v0		# move o endereço da matriz para argumento $a0
+	jal escrita # escrita (mat, nlin, ncol)
+	li $v0, 10		# código para finalizar o programa
+	syscall			# finaliza o programa
 
-scanVet:
-	move $t0, $a0		#Salva o endereço base do vetor em $t0
-	move $t1, $t0		#Salva o endereço base do vetor em $t1 ($t1 será incrementado)
-	li $t2, 0		#$t2 recebe 0 (contador de verificação)
-	move $t3, $a1		#Salva o tamanho do vetor em $t3
+indice:	mul $v0, $t0, $a2	# i * numeroColunas
+	add $v0, $v0, $t1	# (i * numeroColunas) + j
+	sll $v0, $v0, 2		# [(i * numeroColunas) + j] * 4 (inteiro)
+	add $v0, $v0, $a3	# soma o endereço base de matriz
+	jr $ra			# retorna para o caller
+
+leitura:subi $sp, $sp, 4	# espaço para 1 item na pilha
+	sw $ra, ($sp)		# salva o retorno para a main
+	move $a3, $a0		# aux = endereço base de matriz
 	
-l:	la $a0, entradaVet	
-	li $v0, 4		#Código de impressão de string
-	syscall
-	move $a0, $t2
-	li $v0, 1		#Código de impressão de inteiro
-	syscall
-	la $a0, entradaAux
-	li $v0, 4		#Código de impressão de string
-	syscall
-	li $v0, 5		#Código de leitura de inteiro
-	syscall
-	sw $v0, ($t1)		#Salva o valor lido no endereço armazenado em $t1
-	addi $t1, $t1, 4	#Incrementa o endereço do vetor
-	addi $t2, $t2, 1	#Incrementa o contador
-	blt $t2, $t3, l		#Pula para l se o contador for menor que o tamanho do vetor
-	move $v0, $t0		#Salva o endereço base de vet
+l:	la $a0, Ent1	# carrega o endereço da string
+	li $v0, 4		# código de impressão de string
+	syscall			# imprime a string
+	move $a0, $t0		# valor de i para impressao
+	li $v0, 1		# código de impressao de inteiro
+	syscall			# imprime i
+	la $a0, Ent2	# carrega o endereço da string
+	li $v0, 4		# código de impressão de string
+	syscall			# imprime a string
+	move $a0, $t1		# valor de j para impressao
+	li $v0, 1		# código de impressao de inteiro
+	syscall			# imprime j
+	la $a0, Ent3	# carrega o endereço da string
+	li $v0, 4		# código de impressão de string
+	syscall			# imprime a string
+	li $v0, 5		# codigo de leitura de inteiro
+	syscall			# leitura do valor (retorna em $v0)
+	move $t2, $v0		# aux = valor lido
+	jal indice		# calcula o endereço de matriz[i][j]
+	sw $t2, ($v0)		# matriz[i][j] = aux
+	addi $t1, $t1, 1	# j++
+	blt $t1, $a2, l		# if (j < numeroColunas1) goto 1
+	li $t1, 0		# j = 0
+	addi $t0, $t0, 1	# i++
+	blt $t0, $a1, l		# if (i < numeroLinhas) goto 1
+	li $t0, 0		# i = 0
+	lw $ra, ($sp)		# recupera o retorno para a main
+	addi $sp, $sp, 4	# libera o espaço na pilha
+	move $v0, $a3		# endereço da matriz para retorno
 	jr $ra
 
-	
 escrita:
    	subi $sp, $sp, 4 # Espaço para 1 item na pilha
    	sw $ra, ($sp) # Salva o retorno para a main
-   	move $a3, $a0 # aux = endereço base de vet
-   	move $t4, $a0 #salva valor de vet
-   	li $t1, 0 #setamos o contador em 0
-   	div $t7, $a1, 2
-   	la $a0, primeira
-	li $v0, 4		#Código de impressão de string
-	syscall
+   	move $a3, $a0 # aux = endereço base de mat
 e: 
-  	lw $a0, ($t4) # Valor em vet[i]
+	jal indice # Calcula o endereço de mat [i] [j]
+  	lw $a0, ($v0) # Valor em mat [i][j]
   	li $v0, 1 # Código de impressão de inteiro
-   	syscall # Imprinme vet[i]
+   	syscall # Imprine mat [i] [j]
   	la $a0, 32 # Código ASCII para espaço
    	li $v0, 11 # Código de impressão de caractere
   	syscall # Imprime o espaço
-  	addi $t4, $t4, 4 #Andamos uma posição
-   	addi $t1, $t1, 1 # i++
-   	blt $t1, $t7, e # if(i < tamvet/2) goto e
-   	li $t0, 0 #i - 0
+   	addi $t1, $t1, 1 # j++
+   	blt $t1, $a2, e # if(j < ncol) goto e
+   	la $a0, 10 # Código ASCII para newline ('\n')
+   	syscall # Pula a linha
+  	li $t1, 0 # j = 0
+   	addi $t0, $t0, 1 # i++
+   	blt $t0, $a1, e # if(i < nlin) goto e
+  	li $t0, 0 #i - 0
    	lw $ra, ($sp) # Recupera o retorno para a main
    	addi $sp, $sp, 4 # Liberao espaço na pilha
    	move $v0, $a3 # Endereço base da matriz para retorn0
    	jr $ra # Retorna para a main
 
-escrita2:
+percorreLinhas:
+	subi $sp, $sp, 4	# espaço para 1 item na pilha
+	sw $ra, ($sp)		# salva o retorno para a main
+	move $a3, $a0		# aux = endereço base de matriz
+	li $s0, 3		# 3 unidades
+	li $t7, 0		# variavel intermediaria = 0
 	
-   	subi $sp, $sp, 4 # Espaço para 1 item na pilha
-   	sw $ra, ($sp) # Salva o retorno para a main
-   	move $a3, $a0 # aux = endereço base de vet
-   	move $t4, $a0 #salva valor de vet
-   	li $t1, 0 #setamos o contador em 0
-   	mul $t6, $a1, 4
-   	add $t4, $t6, $t4
-   	div $t7, $a1, 2
-   	la $a0, segunda
-	li $v0, 4		#Código de impressão de string
-	syscall
-e2: 
-  	lw $a0, ($t4) # Valor em vet[i]
-  	li $v0, 1 # Código de impressão de inteiro
-   	syscall # Imprinme vet[i]
-  	la $a0, 32 # Código ASCII para espaço
-   	li $v0, 11 # Código de impressão de caractere
-  	syscall # Imprime o espaço
-  	subi $t4, $t4, 4 #Andamos uma posição
-   	addi $t1, $t1, 1 # i++
-   	blt $t1, $t7, e2 # if(i < tamvet/2) goto e
-   	li $t0, 0 #i - 0
-   	lw $ra, ($sp) # Recupera o retorno para a main
-   	addi $sp, $sp, 4 # Liberao espaço na pilha
-   	move $v0, $a3 # Endereço base da matriz para retorn0
-   	jr $ra # Retorna para a main
-   	
-ordena:
-	move $t0, $a0 #Salva o endereço base de vet
-	move $t1, $a0 #Salva endereço de vet
-	move $t5, $a1 #Salva tamanho do vet
-	li $t7, 1 #contador = 1
-	li $t6, 1 #contador = 1
-
-loop:
-	lw $t2, ($t0) #Carrega 
-	lw $t3, ($t1)
-	blt $t3, $t2, swap #Se um menor que outro troca
-	j avanca2
-
-swap:
-	sw $t2, ($t1) #Troca valores
-	sw $t3, ($t0)
-	j loop
-	
-avanca1:
-	move $t6, $t7 #Reseta o contador
-	addi $t0, $t0, 4 #Anda uma posição com o valor 1
-	move $t1, $t0 #começa os dois no mesmo ponto novamente
-	addi $t7, $t7, 1
-	bgt $t7, $t5, fim
-	j loop
-avanca2:
-	addi $t1, $t1, 4 #Anda uma posição com o valor 2
-	addi $t6, $t6, 1
-	bgt  $t6, $t5, avanca1
-	j loop
-
-fim:
-	move $v0, $a0
-	jr $ra
+pL:	jal indice		# calcula o endereço de matriz[i][j]
+	lw $t7, ($v0)		# t7 = valor de matriz[i][j]
+	addi $t7, $t7, 3	# add 3 unidades
+	sw $t7, ($v0)		# Salva na memória o novo valor
+	addi, $t1, $t1, 1	# j++
+	blt $t1, $a2, pL	# if (j < numeroColunas) goto pL
+	li $s0, 0		# soma = 0
+	li $t1, 0		# j = 0
+	addi $t0, $t0, 1	# i++
+	blt $t0, $a1, pL	# if (i < numeroLinhas) goto pL
+	li $t0, 0		# i = 0
+	lw $ra, ($sp)		# recupera o endereço de retorno pra main
+	addi $sp, $sp, 4	# libera espaço na pilha
+	move $v0, $a3		# endereço base da matriz para retorno
+	jr $ra 			#retorna para a main
 	
